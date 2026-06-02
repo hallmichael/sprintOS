@@ -2,26 +2,46 @@
 
 namespace App\Modules\Tenancy\Domain\Concerns;
 
+use App\Modules\Tenancy\Domain\Models\Tenant;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Apply to every tenant-owned Eloquent model. Adds a global scope filtering by the
- * current tenant context and auto-fills tenant_id on create. Enforced by tests/Architecture.
+ * Apply to every tenant-owned Eloquent model.
+ *
+ * Adds:
+ * - A global scope that auto-filters all queries by the resolved tenant_id.
+ * - A boot hook that sets tenant_id on create from the request-scoped TenantContext.
+ * - A tenant() relationship.
+ *
+ * Rule: every model in Modules\/\*\*\/Models that is owned by a tenant MUST use
+ * this trait OR be explicitly allow-listed. The Architecture test enforces this.
  */
 trait BelongsToTenant
 {
     protected static function bootBelongsToTenant(): void
     {
-        static::addGlobalScope('tenant', function (Builder $builder) {
-            if ($tenantId = app('tenant.context')->id()) {
-                $builder->where($builder->getModel()->getTable() . '.tenant_id', $tenantId);
+        // Auto-filter every query by the active tenant.
+        static::addGlobalScope('tenant', function (Builder $builder): void {
+            $tenantId = app('tenant.context')->id();
+            if ($tenantId !== null) {
+                $builder->where($builder->getModel()->getTable().'.tenant_id', $tenantId);
             }
         });
 
-        static::creating(function ($model) {
-            if (! $model->tenant_id && $id = app('tenant.context')->id()) {
-                $model->tenant_id = $id;
+        // Stamp tenant_id on every new record.
+        static::creating(function (self $model): void {
+            if (empty($model->tenant_id)) {
+                $tenantId = app('tenant.context')->id();
+                if ($tenantId !== null) {
+                    $model->tenant_id = $tenantId;
+                }
             }
         });
+    }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 }
