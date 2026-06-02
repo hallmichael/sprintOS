@@ -35,4 +35,32 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SSO / OAuth2 Providers (sprintOS)
+    |--------------------------------------------------------------------------
+    | Credentials are stored per-tenant in the sso_configs table and injected
+    | into Socialite dynamically at request time. These stubs satisfy Socialite's
+    | config-presence checks; they are never used for real requests.
+    */
+
+    'google' => [
+        'client_id'     => env('SSO_GOOGLE_CLIENT_ID', 'placeholder'),
+        'client_secret' => env('SSO_GOOGLE_CLIENT_SECRET', 'placeholder'),
+        'redirect'      => '/api/auth/sso/google/callback',
+    ],
+
+    'github' => [
+        'client_id'     => env('SSO_GITHUB_CLIENT_ID', 'placeholder'),
+        'client_secret' => env('SSO_GITHUB_CLIENT_SECRET', 'placeholder'),
+        'redirect'      => '/api/auth/sso/github/callback',
+    ],
+
+    'azure' => [
+        'client_id'     => env('SSO_AZURE_CLIENT_ID', 'placeholder'),
+        'client_secret' => env('SSO_AZURE_CLIENT_SECRET', 'placeholder'),
+        'redirect'      => '/api/auth/sso/microsoft/callback',
+        'tenant'        => env('SSO_AZURE_TENANT_ID', 'common'),
+    ],
+
 ];

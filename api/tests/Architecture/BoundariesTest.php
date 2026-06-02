@@ -31,9 +31,14 @@ arch('only Ai, Connectors, Usage may call external services directly')
 
 // ── 3. Module boundaries ──────────────────────────────────────────────────
 // Modules interact only through their Services contracts, never direct Domain imports.
+//
+// Allow-listed exceptions:
+//   SsoController — pre-auth integration endpoint that must look up Tenant by
+//   slug before a user session exists; no service indirection is possible here.
 arch('modules must not reach into another module Domain internals')
     ->expect('App\Modules\Identity')
-    ->not->toUse('App\Modules\Tenancy\Domain\Models');
+    ->not->toUse('App\Modules\Tenancy\Domain\Models')
+    ->ignoring('App\Modules\Identity\Http\Controllers\SsoController');
 
 arch('modules must not reach into another module Domain internals (reverse)')
     ->expect('App\Modules\Tenancy')
