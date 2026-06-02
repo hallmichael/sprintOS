@@ -20,6 +20,7 @@ arch('every tenant-owned model uses BelongsToTenant')
         'App\Modules\Tenancy\Domain\Models\Tenant',     // the org itself
         'App\Modules\Identity\Domain\Models\User',      // global identity, spans orgs
         'App\Modules\Identity\Domain\Models\Membership', // junction; queried across orgs
+        'App\Modules\Usage\Domain\Models\UsageRate',     // deployment-wide rate card
     ]);
 
 // ── 2. External service gateway ──────────────────────────────────────────

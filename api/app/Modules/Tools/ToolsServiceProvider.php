@@ -2,18 +2,28 @@
 
 namespace App\Modules\Tools;
 
+use App\Modules\Tools\Domain\Handlers\CalculatorHandler;
+use App\Modules\Tools\Domain\Services\ToolRegistry;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
-/** Registers the Tools module: bind Service contracts here and load routes. */
 class ToolsServiceProvider extends ServiceProvider
 {
+    /**
+     * Built-in tool handlers: handler-key → implementation.
+     * The Crud, DataLake and Orchestration modules register more here later.
+     */
+    private const HANDLERS = [
+        'calculator' => CalculatorHandler::class,
+    ];
+
     public function register(): void
     {
-        // $this->app->bind(Contract::class, Concrete::class);
+        $this->app->singleton(ToolRegistry::class, fn () => new ToolRegistry(self::HANDLERS));
     }
 
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/routes.php');
+        Route::middleware('api')->prefix('api')->group(__DIR__.'/routes.php');
     }
 }

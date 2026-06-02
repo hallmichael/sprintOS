@@ -2,11 +2,33 @@
 
 namespace App\Modules\Billing;
 
+use App\Modules\Billing\Domain\Contracts\PaymentGateway;
+use App\Modules\Billing\Domain\Services\FakePaymentGateway;
+use App\Modules\Billing\Domain\Services\StripePaymentGateway;
+use App\Modules\Billing\Domain\Services\TenantMarkupResolver;
+use App\Modules\Usage\Domain\Contracts\MarkupResolver;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /** Billing: markup engine, payment (Stripe), invoices, caps. Reads from the Usage ledger. */
 class BillingServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
-    public function boot(): void { $this->loadRoutesFrom(__DIR__ . '/routes.php'); }
+    public function register(): void
+    {
+        // Rebind the Usage markup port to the tenant-aware resolver (Billing owns
+        // the markup rate). This hard bind overrides Usage's bindIf default.
+        $this->app->bind(MarkupResolver::class, TenantMarkupResolver::class);
+
+        // Payment processor: fake in tests/local, Stripe in production.
+        $this->app->bind(PaymentGateway::class, function () {
+            return config('sprintos.billing.payments.driver') === 'stripe'
+                ? new StripePaymentGateway
+                : new FakePaymentGateway;
+        });
+    }
+
+    public function boot(): void
+    {
+        Route::middleware('api')->prefix('api')->group(__DIR__.'/routes.php');
+    }
 }

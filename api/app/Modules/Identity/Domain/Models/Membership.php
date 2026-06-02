@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * NOT tenant-scoped (no BelongsToTenant): a membership must be queryable across
  * orgs for a given user (that's the whole point of the org switcher). All queries
  * scope tenant explicitly. Allow-listed in the architecture test. See ADR 0005.
+ *
+ * @property-read Tenant $tenant
  */
 class Membership extends Model
 {

@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property array<string, mixed>|null $settings
+ */
 class Tenant extends Model
 {
     use HasFactory, HasUlids, SoftDeletes;
@@ -21,7 +24,7 @@ class Tenant extends Model
     protected function casts(): array
     {
         return [
-            'settings'  => 'array',
+            'settings' => 'array',
             'is_active' => 'boolean',
         ];
     }

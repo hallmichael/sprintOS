@@ -2,18 +2,27 @@
 
 namespace App\Modules\Ai;
 
+use App\Modules\Ai\Domain\Contracts\ModelClient;
+use App\Modules\Ai\Domain\Services\BedrockModelClient;
+use App\Modules\Ai\Domain\Services\FakeModelClient;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
-/** Registers the Ai module: bind Service contracts here and load routes. */
 class AiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // $this->app->bind(Contract::class, Concrete::class);
+        // Single model driver per deployment. Fake by default (tests/local);
+        // Bedrock when AI_DRIVER=bedrock. Singleton so the fake can be scripted.
+        $this->app->singleton(ModelClient::class, function () {
+            return config('sprintos.ai.driver') === 'bedrock'
+                ? new BedrockModelClient
+                : new FakeModelClient;
+        });
     }
 
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/routes.php');
+        Route::middleware('api')->prefix('api')->group(__DIR__.'/routes.php');
     }
 }

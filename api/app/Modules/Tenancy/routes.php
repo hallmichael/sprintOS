@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Tenancy\Http\Controllers\OrgSettingsController;
 use App\Modules\Tenancy\Http\Controllers\TenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,4 +13,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('tenants', [TenantController::class, 'store'])->name('tenants.store');
     Route::get('tenants/{id}', [TenantController::class, 'show'])->name('tenants.show');
     Route::patch('tenants/{id}', [TenantController::class, 'update'])->name('tenants.update');
+});
+
+// ── Org settings (setup wizard) ──────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'tenant'])->group(function (): void {
+    Route::get('org/settings', [OrgSettingsController::class, 'show'])->name('org.settings.show');
+    Route::patch('org/settings', [OrgSettingsController::class, 'update'])
+        ->middleware('tenant.role:admin')->name('org.settings.update');
 });
