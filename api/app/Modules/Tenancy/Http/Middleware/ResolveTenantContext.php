@@ -11,13 +11,16 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Resolves the active tenant for the current request and populates TenantContext.
  *
- * Resolution order:
- * 1. Authenticated user's tenant_id (primary — covers most API calls).
- * 2. X-Tenant-ID header (useful for system-level tokens or CLI-driven requests).
+ * Resolution rules (security-sensitive — read carefully):
+ *   - Authenticated regular user → ALWAYS pinned to their own tenant_id.
+ *     The X-Tenant-ID header is ignored; a user cannot escape their org.
+ *   - Authenticated platform-admin → may "act as" any org via X-Tenant-ID
+ *     (for support/management); falls back to their own tenant_id otherwise.
+ *   - Unauthenticated request → no tenant context. The X-Tenant-ID header is
+ *     NOT trusted from anonymous callers (would otherwise allow scope spoofing).
  *
- * If no tenant can be resolved the request continues with an empty context;
- * endpoints that require a tenant should use the RequiresTenant middleware or
- * call TenantContext::require() directly.
+ * If no tenant resolves, the request continues with an empty context; endpoints
+ * that require one should call TenantContext::require().
  */
 final class ResolveTenantContext
 {
@@ -25,8 +28,13 @@ final class ResolveTenantContext
 
     public function handle(Request $request, Closure $next): Response
     {
-        $tenantId = $request->user()?->tenant_id
-            ?? $request->header('X-Tenant-ID');
+        $user = $request->user();
+
+        $tenantId = match (true) {
+            $user === null              => null,                  // anonymous: never trust the header
+            $user->isPlatformAdmin()    => $request->header('X-Tenant-ID') ?: $user->tenant_id,
+            default                     => $user->tenant_id,      // regular user: pinned to own org
+        };
 
         if ($tenantId) {
             $tenant = Tenant::withoutGlobalScopes()->find($tenantId);

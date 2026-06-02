@@ -34,4 +34,13 @@ class User extends Authenticatable
             'password'          => 'hashed',
         ];
     }
+
+    /**
+     * A deployment-level super-admin who can manage every organisation and
+     * "act as" any tenant. The only role that crosses org boundaries.
+     */
+    public function isPlatformAdmin(): bool
+    {
+        return $this->hasRole('platform-admin');
+    }
 }
