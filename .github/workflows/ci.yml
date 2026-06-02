@@ -1,0 +1,29 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.3' }
+      - run: cd api && composer install --no-interaction
+      - run: cd api && composer test
+      - run: cd api && composer analyse
+      - run: cd api && composer arch        # tenant scoping + boundary guardrails
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: cd app && npm ci
+      - run: cd app && npm run typecheck
+      - run: cd app && npm run lint
+      - run: cd app && npm test
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # regenerate OpenAPI + ts-client; fail if the working tree changed (drift)
+      - run: ./scripts/regen-contract.sh && git diff --exit-code

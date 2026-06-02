@@ -1,0 +1,18 @@
+{
+  "name": "sprintos-app",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "test": "jest",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "gen:client": "openapi-typescript ../packages/contracts-openapi/openapi.yaml -o ../packages/ts-client/index.ts"
+  },
+  "dependencies": {
+    "expo": "*", "expo-router": "*", "react": "*", "react-native": "*",
+    "tamagui": "*", "@tanstack/react-query": "*",
+    "react-hook-form": "*", "@hookform/resolvers": "*", "yup": "*",
+    "lucide-react-native": "*"
+  },
+  "devDependencies": { "typescript": "*", "eslint": "*", "jest": "*", "openapi-typescript": "*" }
+}

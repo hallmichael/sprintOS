@@ -1,0 +1,13 @@
+# PHP / Laravel
+/api/vendor/
+/api/.env
+/api/storage/*.key
+/api/public/storage
+# Node / Expo
+/app/node_modules/
+/app/.expo/
+# Generated client is committed; regenerate via scripts/regen-contract.sh
+# Local Claude overrides
+.claude/settings.local.json
+# OS
+.DS_Store

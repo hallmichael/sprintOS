@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(cd api && composer *)",
+      "Bash(cd api && ./vendor/bin/pest*)",
+      "Bash(cd api && php artisan *)",
+      "Bash(cd app && npm *)",
+      "Bash(cd app && npx tsc*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git add *)",
+      "Bash(./scripts/regen-contract.sh)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push*)",
+      "Bash(php artisan migrate:fresh*)",
+      "Bash(php artisan db:wipe*)",
+      "Read(./**/.env)",
+      "Read(./**/*.pem)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "f=\"$CLAUDE_FILE_PATH\"; case \"$f\" in *.php) (cd api && ./vendor/bin/pint \"$f\" >/dev/null 2>&1) ;; *.ts|*.tsx) (cd app && npx prettier --write \"$f\" >/dev/null 2>&1) ;; esac" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "echo 'Reminder: run /check before considering this slice done (Pest + Larastan + arch tests + typecheck + lint + contract drift).'" }
+        ]
+      }
+    ]
+  }
+}
