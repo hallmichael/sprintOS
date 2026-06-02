@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant'             => \App\Modules\Tenancy\Http\Middleware\ResolveTenantContext::class,
+            'tenant.role'        => \App\Modules\Tenancy\Http\Middleware\EnsureTenantRole::class,
             'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

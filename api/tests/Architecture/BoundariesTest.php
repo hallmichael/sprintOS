@@ -16,7 +16,10 @@ arch('every tenant-owned model uses BelongsToTenant')
     ->extending('Illuminate\Database\Eloquent\Model')
     ->toUseTrait('App\Modules\Tenancy\Domain\Concerns\BelongsToTenant')
     ->ignoring([
-        'App\Modules\Tenancy\Domain\Models\Tenant', // Tenant itself is not tenant-scoped
+        // Not tenant-owned (see ADR 0005):
+        'App\Modules\Tenancy\Domain\Models\Tenant',     // the org itself
+        'App\Modules\Identity\Domain\Models\User',      // global identity, spans orgs
+        'App\Modules\Identity\Domain\Models\Membership', // junction; queried across orgs
     ]);
 
 // ── 2. External service gateway ──────────────────────────────────────────
@@ -30,19 +33,15 @@ arch('only Ai, Connectors, Usage may call external services directly')
     ]);
 
 // ── 3. Module boundaries ──────────────────────────────────────────────────
-// Modules interact only through their Services contracts, never direct Domain imports.
-//
-// Allow-listed exceptions:
-//   SsoController — pre-auth integration endpoint that must look up Tenant by
-//   slug before a user session exists; no service indirection is possible here.
-arch('modules must not reach into another module Domain internals')
-    ->expect('App\Modules\Identity')
-    ->not->toUse('App\Modules\Tenancy\Domain\Models')
-    ->ignoring('App\Modules\Identity\Http\Controllers\SsoController');
-
-arch('modules must not reach into another module Domain internals (reverse)')
+// Tenancy is the foundational module: its `Tenant` model, BelongsToTenant trait
+// and TenantContext are the shared tenancy primitives that higher modules are
+// designed to build on (every owned table has a tenant_id). So depending on
+// Tenancy is allowed. The invariant that matters is the REVERSE — the foundation
+// must never depend on a feature module. If Tenancy knew about Identity (users),
+// the dependency graph would have a cycle and the foundation couldn't stand alone.
+arch('the Tenancy foundation does not depend on the Identity module')
     ->expect('App\Modules\Tenancy')
-    ->not->toUse('App\Modules\Identity\Domain\Models');
+    ->not->toUse('App\Modules\Identity');
 
 // ── 4. Thin controllers ───────────────────────────────────────────────────
 arch('controllers do not touch the DB directly')

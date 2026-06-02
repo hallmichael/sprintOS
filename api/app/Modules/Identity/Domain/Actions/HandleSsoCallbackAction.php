@@ -7,37 +7,38 @@ use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as OAuthUser;
 
 /**
- * Finds an existing user by email within the given tenant, or auto-provisions one.
- * Returns a Sanctum plain-text token ready to hand back to the frontend.
+ * Resolves an SSO login to a Sanctum token (ADR 0005).
  *
- * Takes a $tenantId string (not a Tenant model) so this action has no cross-module
- * domain dependency — the controller owns the Tenant lookup.
+ * Find-or-create the GLOBAL user by email, then ensure they have a membership
+ * in the org that initiated the SSO flow. The same email signing in to two orgs
+ * is one identity with two memberships.
  *
- * Auto-provisioned users receive the 'member' role.
- * Existing users retain their current roles.
+ * Newly created users are email-verified (the IdP vouched for the address).
+ * New memberships default to the 'member' role; existing ones are untouched.
  */
 final class HandleSsoCallbackAction
 {
+    public function __construct(
+        private readonly ProvisionMembershipAction $provisionMembership,
+    ) {}
+
     public function execute(string $tenantId, string $provider, OAuthUser $oauthUser): string
     {
-        $user = User::withoutGlobalScopes()
-            ->where('tenant_id', $tenantId)
-            ->where('email', $oauthUser->getEmail())
-            ->first();
+        $user = User::where('email', $oauthUser->getEmail())->first();
 
         if ($user === null) {
-            $user = User::withoutGlobalScopes()->create([
-                'tenant_id'         => $tenantId,
+            $user = User::create([
                 'name'              => $oauthUser->getName() ?? $oauthUser->getNickname() ?? 'SSO User',
                 'email'             => $oauthUser->getEmail(),
-                'email_verified_at' => now(),          // IdP already verified the email
+                'email_verified_at' => now(),
                 'password'          => Str::password(32), // unusable random password
             ]);
-
-            $user->assignRole('member');
         }
 
-        // Revoke old SSO tokens for this provider before issuing a fresh one.
+        // Ensure org membership (idempotent — preserves an existing role).
+        $this->provisionMembership->execute($user->id, $tenantId);
+
+        // Rotate this provider's SSO tokens before issuing a fresh one.
         $user->tokens()->where('name', "sso:{$provider}")->delete();
 
         return $user->createToken("sso:{$provider}")->plainTextToken;

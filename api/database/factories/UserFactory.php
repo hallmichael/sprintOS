@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Modules\Identity\Domain\Models\Membership;
 use App\Modules\Identity\Domain\Models\User;
-use App\Modules\Tenancy\Domain\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -20,7 +20,6 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id'          => Tenant::factory(),
             'name'               => fake()->name(),
             'email'              => fake()->unique()->safeEmail(),
             'email_verified_at'  => now(),
@@ -34,5 +33,17 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /** Attach a membership in the given org with the given role after creation. */
+    public function memberOf(string $tenantId, string $role = 'member'): static
+    {
+        return $this->afterCreating(function (User $user) use ($tenantId, $role): void {
+            Membership::create([
+                'tenant_id' => $tenantId,
+                'user_id'   => $user->id,
+                'role'      => $role,
+            ]);
+        });
     }
 }

@@ -1,15 +1,14 @@
 <?php
 
 /**
- * Phase 1.5 — Multi-org management authorisation.
+ * Phase 1.5 — Multi-org management authorisation (ADR 0005 identity model).
  *
- * Verifies the platform-admin vs regular-user boundary for org management:
- *   - regular users may only ever see/manage their OWN organisation
- *   - platform-admins may list, create and manage EVERY organisation
- *   - a platform-admin may "act as" another org via the X-Tenant-ID header
+ *   - regular users may only see/manage orgs they are a member of
+ *   - platform-admins may list, create and manage EVERY org
+ *   - a platform-admin may "act as" any org via the X-Tenant-ID header
+ *   - a regular user cannot escape their orgs via the header
  */
 
-use App\Modules\Identity\Domain\Models\User;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -19,26 +18,13 @@ beforeEach(function (): void {
     $this->orgA = Tenant::create(['name' => 'Org A', 'slug' => 'org-a']);
     $this->orgB = Tenant::create(['name' => 'Org B', 'slug' => 'org-b']);
 
-    $this->memberA = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->orgA->id,
-        'name'      => 'Alice',
-        'email'     => 'alice@orga.com',
-        'password'  => 'Password1!',
-    ]);
-    $this->memberA->assignRole('member');
-
-    $this->platformAdmin = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->orgA->id,
-        'name'      => 'Root',
-        'email'     => 'root@sprint.os',
-        'password'  => 'Password1!',
-    ]);
-    $this->platformAdmin->assignRole('platform-admin');
+    $this->memberA       = makeUser($this->orgA->id, 'member', ['email' => 'alice@orga.com']);
+    $this->platformAdmin = makePlatformAdmin(['email' => 'root@sprint.os']);
 });
 
-// ── Regular user: confined to their own org ───────────────────────────────
+// ── Regular user: confined to their org(s) ────────────────────────────────
 
-it('regular user only sees their own organisation in the list', function (): void {
+it('regular user only sees orgs they belong to', function (): void {
     $response = $this->actingAs($this->memberA)->getJson('/api/tenants');
 
     $response->assertOk();
@@ -55,20 +41,20 @@ it('regular user cannot create an organisation', function (): void {
         ->assertForbidden();
 });
 
-it('regular user gets 404 viewing another org', function (): void {
+it('regular user gets 404 viewing an org they do not belong to', function (): void {
     $this->actingAs($this->memberA)
         ->getJson("/api/tenants/{$this->orgB->id}")
         ->assertNotFound();
 });
 
-it('regular user can view their own org', function (): void {
+it('regular user can view an org they belong to', function (): void {
     $this->actingAs($this->memberA)
         ->getJson("/api/tenants/{$this->orgA->id}")
         ->assertOk()
         ->assertJsonPath('id', $this->orgA->id);
 });
 
-it('regular user gets 404 updating another org', function (): void {
+it('regular user gets 404 updating an org they do not belong to', function (): void {
     $this->actingAs($this->memberA)
         ->patchJson("/api/tenants/{$this->orgB->id}", ['name' => 'Hijacked'])
         ->assertNotFound();
@@ -104,19 +90,11 @@ it('platform admin can update any organisation', function (): void {
         ->assertJsonPath('name', 'Org B Renamed');
 });
 
-// ── Platform admin: "act as" another org via header ───────────────────────
+// ── "Act as" another org via header ───────────────────────────────────────
 
-it('platform admin can act as another org via X-Tenant-ID header', function (): void {
-    // A user that lives in org B
-    $bobInB = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->orgB->id,
-        'name'      => 'Bob',
-        'email'     => 'bob@orgb.com',
-        'password'  => 'Password1!',
-    ]);
-    $bobInB->assignRole('member');
+it('platform admin can act as another org via X-Tenant-ID', function (): void {
+    makeUser($this->orgB->id, 'member', ['email' => 'bob@orgb.com']);
 
-    // Platform admin queries /api/users while acting as org B → sees org B's users only
     $response = $this->actingAs($this->platformAdmin)
         ->withHeader('X-Tenant-ID', $this->orgB->id)
         ->getJson('/api/users');
@@ -128,14 +106,8 @@ it('platform admin can act as another org via X-Tenant-ID header', function (): 
         ->and($emails)->not->toContain('alice@orga.com');
 });
 
-it('regular user cannot escape their org with X-Tenant-ID header', function (): void {
-    // memberA tries to spoof org B context — must be ignored, stays in org A
-    User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->orgB->id,
-        'name'      => 'Bob',
-        'email'     => 'bob@orgb.com',
-        'password'  => 'Password1!',
-    ]);
+it('regular user cannot escape their org with X-Tenant-ID', function (): void {
+    makeUser($this->orgB->id, 'member', ['email' => 'bob@orgb.com']);
 
     $response = $this->actingAs($this->memberA)
         ->withHeader('X-Tenant-ID', $this->orgB->id)
@@ -144,6 +116,7 @@ it('regular user cannot escape their org with X-Tenant-ID header', function (): 
     $response->assertOk();
     $emails = collect($response->json('data'))->pluck('email');
 
-    // Header ignored: still scoped to org A
-    expect($emails)->not->toContain('bob@orgb.com');
+    // Header ignored (not a member of org B): stays scoped to org A.
+    expect($emails)->not->toContain('bob@orgb.com')
+        ->and($emails)->toContain('alice@orga.com');
 });

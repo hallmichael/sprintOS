@@ -95,97 +95,60 @@ it('returns 404 when SSO config is disabled', function (): void {
         ->assertNotFound();
 });
 
-// ── Callback — new user auto-provisioning ─────────────────────────────────
+// ── Callback — auto-provisioning (ADR 0005) ───────────────────────────────
 
-it('creates a new user and returns a token on first SSO login', function (): void {
-    mockSocialiteUser('google', 'alice@acme.com', 'Alice Smith');
-
-    $response = $this->getJson('/api/auth/sso/google/callback?state=acme|csrf-token&code=fake-code');
-
-    $response->assertOk()
-        ->assertJsonStructure(['token']);
-
-    // User was created in the correct tenant
-    $user = User::withoutGlobalScopes()
-        ->where('email', 'alice@acme.com')
-        ->where('tenant_id', $this->tenant->id)
-        ->first();
-
-    expect($user)->not->toBeNull()
-        ->and($user->email_verified_at)->not->toBeNull()
-        ->and($user->hasRole('member'))->toBeTrue();
-});
-
-it('returns a token for an existing user without duplicating them', function (): void {
-    // Pre-create the user in org A
-    $existing = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->tenant->id,
-        'name'      => 'Alice',
-        'email'     => 'alice@acme.com',
-        'password'  => 'irrelevant',
-    ]);
-    $existing->assignRole('admin');
-
+it('creates a global user + org membership on first SSO login', function (): void {
     mockSocialiteUser('google', 'alice@acme.com', 'Alice Smith');
 
     $this->getJson('/api/auth/sso/google/callback?state=acme|csrf-token&code=fake-code')
         ->assertOk()
         ->assertJsonStructure(['token']);
 
-    // Still exactly one user with this email in this tenant
-    $count = User::withoutGlobalScopes()
-        ->where('email', 'alice@acme.com')
-        ->where('tenant_id', $this->tenant->id)
-        ->count();
+    $user = User::where('email', 'alice@acme.com')->first();
 
-    expect($count)->toBe(1)
-        ->and($existing->fresh()->hasRole('admin'))->toBeTrue();  // role preserved
+    expect($user)->not->toBeNull()
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and($user->memberOf($this->tenant->id))->toBeTrue()
+        ->and($user->roleIn($this->tenant->id))->toBe('member');
 });
 
-// ── Tenant isolation ───────────────────────────────────────────────────────
+it('reuses the existing identity and preserves their role', function (): void {
+    $existing = makeUser($this->tenant->id, 'admin', ['email' => 'alice@acme.com']);
 
-it('a user from tenant B cannot SSO into tenant A', function (): void {
-    $tenantB = Tenant::create(['name' => 'Other Corp', 'slug' => 'other-corp']);
+    mockSocialiteUser('google', 'alice@acme.com', 'Alice Smith');
 
-    // Same email exists in tenant B
-    User::withoutGlobalScopes()->create([
-        'tenant_id' => $tenantB->id,
-        'name'      => 'Bob',
-        'email'     => 'bob@othercorp.com',
-        'password'  => 'irrelevant',
-    ]);
+    $this->getJson('/api/auth/sso/google/callback?state=acme|csrf-token&code=fake-code')
+        ->assertOk();
 
-    // Bob's Google account SSOs into acme — should create a NEW user in acme, not reuse the tenantB one
+    // Still exactly one global user; the pre-existing admin role is preserved.
+    expect(User::where('email', 'alice@acme.com')->count())->toBe(1)
+        ->and($existing->fresh()->roleIn($this->tenant->id))->toBe('admin');
+});
+
+// ── Shared identity across orgs ────────────────────────────────────────────
+
+it('SSO into a second org adds a membership to the same identity', function (): void {
+    $orgB = Tenant::create(['name' => 'Other Corp', 'slug' => 'other-corp']);
+
+    // Bob already belongs to org B.
+    $bob = makeUser($orgB->id, 'member', ['email' => 'bob@othercorp.com']);
+
+    // Bob's Google account now SSOs into acme.
     mockSocialiteUser('google', 'bob@othercorp.com', 'Bob');
 
     $this->getJson('/api/auth/sso/google/callback?state=acme|csrf-token&code=fake-code')
         ->assertOk();
 
-    $acmeUser = User::withoutGlobalScopes()
-        ->where('email', 'bob@othercorp.com')
-        ->where('tenant_id', $this->tenant->id)
-        ->first();
-
-    expect($acmeUser)->not->toBeNull();   // separate user created in acme
-
-    $orgBUser = User::withoutGlobalScopes()
-        ->where('email', 'bob@othercorp.com')
-        ->where('tenant_id', $tenantB->id)
-        ->first();
-
-    expect($orgBUser)->not->toBeNull();   // org B user untouched
+    // One identity, two memberships; org B membership untouched.
+    expect(User::where('email', 'bob@othercorp.com')->count())->toBe(1)
+        ->and($bob->fresh()->memberOf($this->tenant->id))->toBeTrue()
+        ->and($bob->fresh()->memberOf($orgB->id))->toBeTrue();
 });
 
-// ── SSO Config admin CRUD ─────────────────────────────────────────────────
+// ── SSO Config admin CRUD (org-admin gated) ───────────────────────────────
 
-it('admin can list SSO configs for their tenant', function (): void {
-    $admin = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->tenant->id,
-        'name'      => 'Admin',
-        'email'     => 'admin@acme.com',
-        'password'  => 'Password1!',
-    ]);
-    $admin->assignRole('admin');
+it('org admin can list SSO configs for their org', function (): void {
+    $admin = makeUser($this->tenant->id, 'admin', ['email' => 'admin@acme.com']);
 
     $this->actingAs($admin)
         ->getJson('/api/sso-configs')
@@ -193,14 +156,8 @@ it('admin can list SSO configs for their tenant', function (): void {
         ->assertJsonCount(1);
 });
 
-it('admin can create an SSO config', function (): void {
-    $admin = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->tenant->id,
-        'name'      => 'Admin',
-        'email'     => 'admin@acme.com',
-        'password'  => 'Password1!',
-    ]);
-    $admin->assignRole('admin');
+it('org admin can create an SSO config', function (): void {
+    $admin = makeUser($this->tenant->id, 'admin', ['email' => 'admin@acme.com']);
 
     $this->actingAs($admin)
         ->postJson('/api/sso-configs', [
@@ -209,17 +166,11 @@ it('admin can create an SSO config', function (): void {
             'client_secret' => 'gh-secret',
         ])->assertCreated()
         ->assertJsonPath('provider', 'github')
-        ->assertJsonMissing(['client_secret']);   // secret never returned
+        ->assertJsonMissing(['client_secret']);
 });
 
-it('member cannot manage SSO configs', function (): void {
-    $member = User::withoutGlobalScopes()->create([
-        'tenant_id' => $this->tenant->id,
-        'name'      => 'Member',
-        'email'     => 'member@acme.com',
-        'password'  => 'Password1!',
-    ]);
-    $member->assignRole('member');
+it('org member cannot manage SSO configs', function (): void {
+    $member = makeUser($this->tenant->id, 'member', ['email' => 'member@acme.com']);
 
     $this->actingAs($member)
         ->getJson('/api/sso-configs')

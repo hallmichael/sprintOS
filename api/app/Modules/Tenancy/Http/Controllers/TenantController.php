@@ -31,9 +31,9 @@ final class TenantController extends Controller
 
         $query = Tenant::query()->withoutGlobalScopes();
 
-        // Regular users only ever see their own organisation.
+        // Regular users see only the orgs they are a member of.
         if (! $user->isPlatformAdmin()) {
-            $query->whereKey($user->tenant_id);
+            $query->whereIn('id', $user->memberships()->pluck('tenant_id'));
         }
 
         return TenantResource::collection($query->paginate());
@@ -74,8 +74,8 @@ final class TenantController extends Controller
 
     /**
      * Loads a tenant the caller is allowed to access, or 404s.
-     * A regular user may only touch their own org; a platform-admin may touch any.
-     * We return 404 (not 403) for foreign orgs so existence isn't leaked.
+     * A regular user may only touch an org they are a member of; a platform-admin
+     * may touch any. We return 404 (not 403) for foreign orgs so existence isn't leaked.
      */
     private function resolveAccessible(Request $request, string $id): Tenant
     {
@@ -83,7 +83,7 @@ final class TenantController extends Controller
         $user = $request->user();
 
         abort_unless(
-            $user->isPlatformAdmin() || $tenant->id === $user->tenant_id,
+            $user->isPlatformAdmin() || $user->memberOf($tenant->id),
             404,
         );
 

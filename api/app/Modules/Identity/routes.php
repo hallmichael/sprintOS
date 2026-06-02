@@ -17,23 +17,26 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
     });
 
     // ── SSO / OAuth2 (unauthenticated — user is logging in) ──────────────
-    // ?tenant={slug} identifies which org is initiating the SSO flow.
     Route::prefix('sso/{provider}')->name('sso.')->group(function (): void {
         Route::get('redirect', [SsoController::class, 'redirect'])->name('redirect');
         Route::get('callback', [SsoController::class, 'callback'])->name('callback');
     });
 });
 
-// ── User management (authenticated + tenant-scoped) ───────────────────────
+// ── User management within the active org (authenticated + tenant-scoped) ──
 Route::middleware(['auth:sanctum', 'tenant'])->group(function (): void {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/{id}', [UserController::class, 'show'])->name('users.show');
-    Route::put('users/{id}/roles', [UserController::class, 'assignRole'])->name('users.roles');
-    Route::delete('users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // Mutations require the org-level admin role.
+    Route::middleware('tenant.role:admin')->group(function (): void {
+        Route::put('users/{id}/roles', [UserController::class, 'assignRole'])->name('users.roles');
+        Route::delete('users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
 });
 
-// ── SSO config management (admin only, tenant-scoped) ─────────────────────
-Route::middleware(['auth:sanctum', 'tenant', 'role:admin'])->group(function (): void {
+// ── SSO config management (org admin, tenant-scoped) ──────────────────────
+Route::middleware(['auth:sanctum', 'tenant', 'tenant.role:admin'])->group(function (): void {
     Route::get('sso-configs', [SsoConfigController::class, 'index'])->name('sso-configs.index');
     Route::post('sso-configs', [SsoConfigController::class, 'store'])->name('sso-configs.store');
     Route::get('sso-configs/{id}', [SsoConfigController::class, 'show'])->name('sso-configs.show');

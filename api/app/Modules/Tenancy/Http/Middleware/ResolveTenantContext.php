@@ -9,18 +9,18 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Resolves the active tenant for the current request and populates TenantContext.
+ * Resolves the active organisation for the request and populates TenantContext.
+ * See ADR 0005 for the identity/membership model.
  *
- * Resolution rules (security-sensitive — read carefully):
- *   - Authenticated regular user → ALWAYS pinned to their own tenant_id.
- *     The X-Tenant-ID header is ignored; a user cannot escape their org.
- *   - Authenticated platform-admin → may "act as" any org via X-Tenant-ID
- *     (for support/management); falls back to their own tenant_id otherwise.
- *   - Unauthenticated request → no tenant context. The X-Tenant-ID header is
- *     NOT trusted from anonymous callers (would otherwise allow scope spoofing).
+ * Active-org rules (security-sensitive):
+ *   - Anonymous request → no context. X-Tenant-ID is never trusted from anon callers.
+ *   - Platform-admin → may "act as" ANY org via X-Tenant-ID (support/management);
+ *     otherwise no context (they have no home org).
+ *   - Regular user → X-Tenant-ID is honoured ONLY if they are a member of that org;
+ *     otherwise it is ignored and their default membership's org is used. A user can
+ *     never select an org they don't belong to.
  *
- * If no tenant resolves, the request continues with an empty context; endpoints
- * that require one should call TenantContext::require().
+ * The resolved org drives the BelongsToTenant global scope for all owned resources.
  */
 final class ResolveTenantContext
 {
@@ -29,11 +29,12 @@ final class ResolveTenantContext
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
+        $header = $request->header('X-Tenant-ID');
 
         $tenantId = match (true) {
-            $user === null              => null,                  // anonymous: never trust the header
-            $user->isPlatformAdmin()    => $request->header('X-Tenant-ID') ?: $user->tenant_id,
-            default                     => $user->tenant_id,      // regular user: pinned to own org
+            $user === null           => null,
+            $user->isPlatformAdmin() => $header ?: null,
+            default                  => $this->resolveForMember($user, $header),
         };
 
         if ($tenantId) {
@@ -44,5 +45,18 @@ final class ResolveTenantContext
         }
 
         return $next($request);
+    }
+
+    /**
+     * A member may only activate an org they belong to. An unrecognised or
+     * non-member header falls back to their default membership.
+     */
+    private function resolveForMember($user, ?string $header): ?string
+    {
+        if ($header !== null && $user->memberOf($header)) {
+            return $header;
+        }
+
+        return $user->defaultMembership()?->tenant_id;
     }
 }

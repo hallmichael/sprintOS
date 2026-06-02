@@ -6,24 +6,16 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
 /**
- * Seeds the default role set for every sprintOS deployment.
+ * Seeds deployment-level (global) roles. See ADR 0005.
  *
- * Roles (in order of privilege):
- *   platform-admin — deployment-level super-admin; spans ALL organisations.
- *                    Can create/list/manage every org and "act as" any tenant.
- *                    This is the only role that legitimately crosses org boundaries.
- *   admin          — organisation admin; full access within their own org.
- *   member         — standard user; access to their org's features.
- *   viewer         — read-only access within their org.
+ * Only `platform-admin` lives in spatie now — the cross-org super-admin.
+ * Org-level roles (admin / member / viewer) are NOT spatie roles; they are
+ * stored per-membership on tenant_user.role (see Membership::ROLES).
  */
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        $guard = 'web';
-
-        foreach (['platform-admin', 'admin', 'member', 'viewer'] as $role) {
-            Role::firstOrCreate(['name' => $role, 'guard_name' => $guard]);
-        }
+        Role::firstOrCreate(['name' => 'platform-admin', 'guard_name' => 'web']);
     }
 }
