@@ -1,0 +1,128 @@
+@import "../../styles/variables";
+
+.fm-context-menu {
+  position: absolute;
+  min-width: 220px;
+  max-width: min(280px, calc(100vw - 24px));
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 4px 0;
+  z-index: 1000;
+  transition: opacity 0.1s linear;
+  font-size: 14px;
+  color: #2d3748;
+
+  .file-context-menu-list {
+    font-size: 1em;
+
+    ul {
+      list-style-type: none;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      gap: 0;
+
+      li {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 12px;
+        position: relative;
+        border-radius: 0;
+        font-family: inherit;
+        color: inherit;
+
+        &:hover {
+          cursor: pointer;
+          background: rgba(0, 0, 0, 0.06);
+        }
+      }
+
+      li.active {
+        background: rgba(0, 0, 0, 0.06);
+      }
+
+      li.disable-paste {
+        opacity: 0.5;
+
+        &:hover {
+          cursor: default;
+          background: transparent;
+        }
+      }
+
+      li.fm-context-menu-danger {
+        color: #b91c1c;
+
+        span,
+        svg {
+          color: #b91c1c;
+        }
+
+        &:hover {
+          background: rgba(185, 28, 28, 0.08);
+        }
+      }
+    }
+
+    .divider {
+      border-bottom: 1px solid #e2e8f0;
+      margin: 4px 0;
+    }
+
+    .list-expand-icon {
+      margin-left: auto;
+      color: #2d3748;
+    }
+
+    .sub-menu {
+      position: absolute;
+      top: 0;
+      min-width: 220px;
+      max-width: min(280px, calc(100vw - 24px));
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      padding: 4px 0;
+      z-index: 1001;
+
+      .item-selected {
+        width: 13px;
+        color: #2d3748;
+      }
+
+      li {
+        gap: 10px;
+        padding: 8px 12px;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.06) !important;
+        }
+      }
+    }
+
+    .sub-menu.right {
+      left: calc(100% - 2px);
+    }
+
+    .sub-menu.left {
+      left: calc(-83%);
+    }
+  }
+}
+
+.fm-context-menu.hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.fm-context-menu.visible {
+  opacity: 1;
+  pointer-events: all;
+  visibility: visible;
+}

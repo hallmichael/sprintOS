@@ -1,0 +1,344 @@
+/* IndiWysiwygInput Custom Styles - Matching Project Design System */
+
+/* ReactQuill Editor Styling */
+.ql-editor {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #374151 !important; /* $textNeutral equivalent */
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ReactQuill Toolbar Styling */
+.ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background-color: #f9fafb !important;
+  padding: 8px !important;
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+.ql-toolbar button {
+  color: #6b7280 !important;
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+.ql-toolbar button:hover {
+  color: #374151 !important;
+}
+
+.ql-toolbar button.ql-active {
+  color: #2563eb !important;
+}
+
+/* ReactQuill Container Styling */
+.ql-container {
+  border: none !important;
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* ReactQuill Content Area */
+.ql-editor.ql-blank::before {
+  color: #9ca3af !important; /* $textPlaceholder equivalent */
+  font-style: italic !important;
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* Typography Styling */
+.ql-editor h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 700 !important;
+  margin: 0.5em 0 0.25em 0 !important;
+  color: #374151 !important;
+}
+
+.ql-editor h2 {
+  font-size: 20px !important;
+  line-height: 24px !important;
+  font-weight: 600 !important;
+  margin: 0.5em 0 0.25em 0 !important;
+  color: #374151 !important;
+}
+
+.ql-editor h3 {
+  font-size: 18px !important;
+  line-height: 24px !important;
+  font-weight: 600 !important;
+  margin: 0.5em 0 0.25em 0 !important;
+  color: #374151 !important;
+}
+
+.ql-editor h4 {
+  font-size: 16px !important;
+  line-height: 20px !important;
+  font-weight: 600 !important;
+  margin: 0.5em 0 0.25em 0 !important;
+  color: #374151 !important;
+}
+
+.ql-editor h5 {
+  font-size: 14px !important;
+  line-height: 18px !important;
+  font-weight: 600 !important;
+  margin: 0.5em 0 0.25em 0 !important;
+  color: #374151 !important;
+}
+
+.ql-editor h6 {
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 600 !important;
+  margin: 0.5em 0 0.25em 0 !important;
+  color: #374151 !important;
+}
+
+.ql-editor p {
+  margin: 0.25em 0 !important;
+  line-height: 1.6 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #374151 !important;
+}
+
+/* List Styling */
+.ql-editor ul,
+.ql-editor ol {
+  margin: 0.25em 0 !important;
+  padding-left: 1.5rem !important;
+}
+
+.ql-editor li {
+  margin: 0.1em 0 !important;
+  line-height: 1.6 !important;
+  font-size: 14px !important;
+  color: #374151 !important;
+}
+
+/* Blockquote Styling */
+.ql-editor blockquote {
+  margin: 0.5em 0 !important;
+  padding: 0.75rem 1rem !important;
+  border-left: 4px solid #e5e7eb !important;
+  background-color: #f9fafb !important;
+  font-style: italic !important;
+  color: #6b7280 !important;
+}
+
+.ql-editor blockquote p {
+  margin: 0 !important;
+  color: #6b7280 !important;
+}
+
+/* Link Styling */
+.ql-editor a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+}
+
+.ql-editor a:hover {
+  color: #1d4ed8 !important;
+}
+
+/* Code Styling */
+.ql-editor code {
+  background-color: #f3f4f6 !important;
+  padding: 0.125rem 0.25rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875em !important;
+  color: #374151 !important;
+}
+
+/* Global HTML content styling for dangerouslySetInnerHTML - inheriting project fonts */
+div[dangerouslySetInnerHTML],
+span[dangerouslySetInnerHTML],
+td[dangerouslySetInnerHTML],
+th[dangerouslySetInnerHTML],
+p[dangerouslySetInnerHTML],
+h1[dangerouslySetInnerHTML],
+h2[dangerouslySetInnerHTML],
+h3[dangerouslySetInnerHTML],
+h4[dangerouslySetInnerHTML],
+h5[dangerouslySetInnerHTML],
+h6[dangerouslySetInnerHTML],
+li[dangerouslySetInnerHTML],
+blockquote[dangerouslySetInnerHTML],
+code[dangerouslySetInnerHTML],
+pre[dangerouslySetInnerHTML],
+strong[dangerouslySetInnerHTML],
+em[dangerouslySetInnerHTML],
+b[dangerouslySetInnerHTML],
+i[dangerouslySetInnerHTML],
+u[dangerouslySetInnerHTML],
+a[dangerouslySetInnerHTML],
+ul[dangerouslySetInnerHTML],
+ol[dangerouslySetInnerHTML],
+table[dangerouslySetInnerHTML],
+tr[dangerouslySetInnerHTML],
+td[dangerouslySetInnerHTML],
+th[dangerouslySetInnerHTML] {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+  color: #374151 !important; /* $textNeutral equivalent */
+  line-height: 1.6 !important;
+}
+
+/* Specific styling for HTML content within dangerouslySetInnerHTML */
+div[dangerouslySetInnerHTML] *,
+span[dangerouslySetInnerHTML] *,
+td[dangerouslySetInnerHTML] *,
+th[dangerouslySetInnerHTML] *,
+p[dangerouslySetInnerHTML] *,
+h1[dangerouslySetInnerHTML] *,
+h2[dangerouslySetInnerHTML] *,
+h3[dangerouslySetInnerHTML] *,
+h4[dangerouslySetInnerHTML] *,
+h5[dangerouslySetInnerHTML] *,
+h6[dangerouslySetInnerHTML] *,
+li[dangerouslySetInnerHTML] *,
+blockquote[dangerouslySetInnerHTML] *,
+code[dangerouslySetInnerHTML] *,
+pre[dangerouslySetInnerHTML] *,
+strong[dangerouslySetInnerHTML] *,
+em[dangerouslySetInnerHTML] *,
+b[dangerouslySetInnerHTML] *,
+i[dangerouslySetInnerHTML] *,
+u[dangerouslySetInnerHTML] *,
+a[dangerouslySetInnerHTML] *,
+ul[dangerouslySetInnerHTML] *,
+ol[dangerouslySetInnerHTML] *,
+table[dangerouslySetInnerHTML] *,
+tr[dangerouslySetInnerHTML] *,
+td[dangerouslySetInnerHTML] *,
+th[dangerouslySetInnerHTML] * {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* HTML content rendering in table cells and other contexts */
+.html-content-cell {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-line !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  max-height: 60px !important;
+}
+
+.html-content-cell br {
+  display: block !important;
+  content: '' !important;
+  margin-top: 0.1em !important;
+  margin-bottom: 0.1em !important;
+}
+
+.html-content-cell p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #374151 !important;
+}
+
+.html-content-cell strong,
+.html-content-cell b {
+  font-weight: 600 !important;
+}
+
+.html-content-cell em,
+.html-content-cell i {
+  font-style: italic !important;
+}
+
+.html-content-cell h1,
+.html-content-cell h2,
+.html-content-cell h3,
+.html-content-cell h4,
+.html-content-cell h5,
+.html-content-cell h6 {
+  margin: 0.2em 0 0.1em 0 !important;
+  padding: 0 !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #374151 !important;
+}
+
+.html-content-cell ul,
+.html-content-cell ol {
+  margin: 0.1em 0 !important;
+  padding-left: 1.2em !important;
+}
+
+.html-content-cell li {
+  margin: 0.05em 0 !important;
+  line-height: 1.3 !important;
+  font-size: 14px !important;
+  color: #374151 !important;
+}
+
+/* Additional styling for HTML content in various contexts */
+/* Table cells with HTML content */
+td div[class*='html-content'],
+th div[class*='html-content'],
+td div[class*='wysiwyg'],
+th div[class*='wysiwyg'] {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+  color: #374151 !important;
+  line-height: 1.6 !important;
+}
+
+/* Tooltip content with HTML */
+[data-tooltip] div,
+[data-tooltip] span,
+[data-tooltip] p {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+  color: inherit !important;
+}
+
+/* Modal content with HTML */
+[role='dialog'] div,
+[role='modal'] div,
+.modal-content div,
+.dialog-content div {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* Form content with HTML */
+form div[class*='html'],
+form div[class*='wysiwyg'],
+form div[class*='rich-text'] {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* Additional targeted selectors for better font inheritance */
+/* Target specific components that use dangerouslySetInnerHTML */
+.ant-table-tbody td div,
+.ant-table-thead th div,
+.ant-table-tbody td span,
+.ant-table-thead th span {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* Target modal content specifically */
+.ant-modal-content div,
+.ant-modal-content span,
+.ant-modal-content p {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* Target tooltip content specifically */
+.ant-tooltip-inner div,
+.ant-tooltip-inner span,
+.ant-tooltip-inner p {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
+
+/* Target form content specifically */
+.ant-form-item div,
+.ant-form-item span,
+.ant-form-item p {
+  font-family: 'Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' !important;
+}
