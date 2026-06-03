@@ -28,6 +28,7 @@ const MOCK_SPEND: SpendSummary = {
 };
 
 const ADMIN_TILES: AdminTile[] = [
+  { title: 'CRUD builder', description: 'Create entities with AI — describe in plain English', href: '/(app)/(admin)/crud-builder' },
   { title: 'Organisations', description: 'Manage orgs in this deployment', href: '/(app)/(admin)/organisations' },
   { title: 'Users & roles', description: 'Invite users, set roles', href: '/(app)/(admin)/users' },
   { title: 'Billing', description: 'Usage, invoices and card', href: '/(app)/(admin)/billing' },

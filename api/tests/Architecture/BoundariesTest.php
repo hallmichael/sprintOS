@@ -33,6 +33,15 @@ arch('only Ai, Connectors, Usage may call external services directly')
         'App\Modules\Usage',
     ]);
 
+// ── 2b. All AI calls go through the gateway ──────────────────────────────
+// Modules may depend on ModelGateway (the sanctioned entry point) but must
+// never call ModelClient directly — that bypasses metering and spend-caps.
+arch('feature modules use ModelGateway, not ModelClient directly')
+    ->expect('App\Modules\Ai\Domain\Contracts\ModelClient')
+    ->toOnlyBeUsedIn([
+        'App\Modules\Ai',  // the gateway + drivers live here
+    ]);
+
 // ── 3. Module boundaries ──────────────────────────────────────────────────
 // Tenancy is the foundational module: its `Tenant` model, BelongsToTenant trait
 // and TenantContext are the shared tenancy primitives that higher modules are

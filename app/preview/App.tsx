@@ -13,6 +13,8 @@ import ToolsScreen from '@/features/tools/screens/ToolsScreen';
 import AssistantScreen from '@/features/ai/screens/AssistantScreen';
 import UsageScreen from '@/features/usage/screens/UsageScreen';
 import ProfileScreen from '@/features/profile/screens/ProfileScreen';
+import CrudBuilderScreen from '@/features/crud/screens/CrudBuilderScreen';
+import EntityScreen from '@/features/crud/screens/EntityScreen';
 
 type Entry = { label: string; group: string; C: React.ComponentType };
 
@@ -21,6 +23,7 @@ const ROUTES: Record<string, Entry> = {
   '/(auth)/register': { label: 'Register', group: 'Auth', C: RegisterScreen },
 
   '/(app)/(admin)/dashboard': { label: 'Dashboard', group: 'Admin', C: AdminDashboardScreen },
+  '/(app)/(admin)/crud-builder': { label: 'CRUD builder', group: 'Admin', C: CrudBuilderScreen },
   '/(app)/(admin)/organisations': { label: 'Organisations', group: 'Admin', C: OrganisationsScreen },
   '/(app)/(admin)/users': { label: 'Users & roles', group: 'Admin', C: UsersScreen },
   '/(app)/(admin)/setup': { label: 'Setup wizard', group: 'Admin', C: SetupWizardScreen },
@@ -65,7 +68,12 @@ export default function App() {
 
       <main style={{ flex: 1, overflowY: 'auto', padding: '28px 24px' }}>
         <div style={{ fontSize: 12, color: '#aeb6c0', marginBottom: 14 }}>{current}</div>
-        {entry ? <entry.C /> : <div style={{ color: '#8a93a0' }}>No screen mapped for {current}</div>}
+        {entry ? <entry.C /> : (() => {
+          // Dynamic entity routes: /(app)/(admin)/crud/{key} or /(app)/(user)/entity/{key}
+          const m = current.match(/\/crud\/(.+)$/) ?? current.match(/\/entity\/(.+)$/);
+          if (m) return <EntityScreen entityKey={m[1]} />;
+          return <div style={{ color: '#8a93a0' }}>No screen mapped for {current}</div>;
+        })()}
       </main>
     </div>
   );
