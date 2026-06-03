@@ -15,12 +15,13 @@ return [
 
         'region' => env('AWS_BEDROCK_REGION', env('AWS_DEFAULT_REGION', 'ap-southeast-2')),
 
-        // Model tiers → Bedrock model IDs. Route cheap work to 'fast', complex
-        // agent reasoning to 'powerful'. Overridable per agent later.
+        // Model tiers → Bedrock inference-profile IDs. The `au.` prefix is the
+        // Australia-regional cross-region inference profile (keeps inference in AU
+        // regions, required for on-demand Claude in ap-southeast-2). Verified live.
         'tiers' => [
-            'fast' => env('AI_MODEL_FAST', 'anthropic.claude-3-5-haiku-20241022-v1:0'),
-            'balanced' => env('AI_MODEL_BALANCED', 'anthropic.claude-3-5-sonnet-20241022-v2:0'),
-            'powerful' => env('AI_MODEL_POWERFUL', 'anthropic.claude-3-7-sonnet-20250219-v1:0'),
+            'fast' => env('AI_MODEL_FAST', 'au.anthropic.claude-haiku-4-5-20251001-v1:0'),
+            'balanced' => env('AI_MODEL_BALANCED', 'au.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+            'powerful' => env('AI_MODEL_POWERFUL', 'au.anthropic.claude-opus-4-8'),
         ],
 
         'default_tier' => env('AI_DEFAULT_TIER', 'balanced'),
