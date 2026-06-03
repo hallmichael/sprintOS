@@ -4,6 +4,8 @@ namespace App\Modules\Ai\Domain\Contracts;
 
 use App\Modules\Ai\Domain\Data\ChatRequest;
 use App\Modules\Ai\Domain\Data\ChatResponse;
+use App\Modules\Ai\Domain\Data\EmbedRequest;
+use App\Modules\Ai\Domain\Data\EmbedResponse;
 
 /**
  * The low-level driver to a model provider. Implemented by BedrockModelClient
@@ -16,4 +18,6 @@ use App\Modules\Ai\Domain\Data\ChatResponse;
 interface ModelClient
 {
     public function chat(ChatRequest $request): ChatResponse;
+
+    public function embed(EmbedRequest $request): EmbedResponse;
 }

@@ -12,12 +12,18 @@ class AiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Single model driver per deployment. Fake by default (tests/local);
-        // Bedrock when AI_DRIVER=bedrock. Singleton so the fake can be scripted.
-        $this->app->singleton(ModelClient::class, function () {
-            return config('sprintos.ai.driver') === 'bedrock'
-                ? new BedrockModelClient
-                : new FakeModelClient;
+        // Single model driver per deployment. Bedrock is the production default;
+        // the fake is a test/local double and is FORBIDDEN in production.
+        $this->app->singleton(ModelClient::class, function ($app) {
+            if (config('sprintos.ai.driver') === 'fake') {
+                if ($app->environment('production')) {
+                    throw new \RuntimeException('AI_DRIVER=fake is forbidden in production. Use Bedrock.');
+                }
+
+                return new FakeModelClient;
+            }
+
+            return new BedrockModelClient;
         });
     }
 

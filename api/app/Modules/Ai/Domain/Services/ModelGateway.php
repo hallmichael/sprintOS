@@ -5,6 +5,8 @@ namespace App\Modules\Ai\Domain\Services;
 use App\Modules\Ai\Domain\Contracts\ModelClient;
 use App\Modules\Ai\Domain\Data\ChatRequest;
 use App\Modules\Ai\Domain\Data\ChatResponse;
+use App\Modules\Ai\Domain\Data\EmbedRequest;
+use App\Modules\Ai\Domain\Data\EmbedResponse;
 use App\Modules\Billing\Domain\Services\SpendGuard;
 use App\Modules\Usage\Domain\Contracts\Meter;
 use App\Modules\Usage\Domain\Data\MeterEvent;
@@ -48,6 +50,28 @@ final class ModelGateway
             actorId: $request->actorId,
             correlationId: $request->correlationId,
             metadata: ['stop_reason' => $response->stopReason],
+        ));
+
+        return $response;
+    }
+
+    /** Embed texts (RAG). Cap-checked and metered just like chat. */
+    public function embed(EmbedRequest $request): EmbedResponse
+    {
+        $this->guard->assertWithinCap($request->tenantId);
+
+        $response = $this->client->embed($request);
+
+        $this->meter->record(new MeterEvent(
+            tenantId: $request->tenantId,
+            service: 'bedrock',
+            operation: 'embed',
+            lines: [new MeterLine('input_tokens', $response->inputTokens)],
+            model: $response->model,
+            provider: 'aws-bedrock',
+            actorType: $request->actorType,
+            actorId: $request->actorId,
+            correlationId: $request->correlationId,
         ));
 
         return $response;

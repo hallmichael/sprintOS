@@ -5,6 +5,8 @@ namespace App\Modules\Ai\Domain\Services;
 use App\Modules\Ai\Domain\Contracts\ModelClient;
 use App\Modules\Ai\Domain\Data\ChatRequest;
 use App\Modules\Ai\Domain\Data\ChatResponse;
+use App\Modules\Ai\Domain\Data\EmbedRequest;
+use App\Modules\Ai\Domain\Data\EmbedResponse;
 use App\Modules\Ai\Domain\Data\TokenUsage;
 use App\Modules\Ai\Domain\Data\ToolUse;
 use Aws\BedrockRuntime\BedrockRuntimeClient;
@@ -50,6 +52,29 @@ final class BedrockModelClient implements ModelClient
         $result = $this->client->converse($payload);
 
         return $this->parse($result->toArray(), $request->modelId());
+    }
+
+    public function embed(EmbedRequest $request): EmbedResponse
+    {
+        $model = $request->modelId();
+        $vectors = [];
+        $tokens = 0;
+
+        // Titan Text Embeddings embeds one text per InvokeModel call.
+        foreach ($request->inputs as $text) {
+            $result = $this->client->invokeModel([
+                'modelId' => $model,
+                'contentType' => 'application/json',
+                'accept' => 'application/json',
+                'body' => json_encode(['inputText' => $text]),
+            ]);
+
+            $body = json_decode((string) $result['body'], true);
+            $vectors[] = array_map('floatval', $body['embedding'] ?? []);
+            $tokens += (int) ($body['inputTextTokenCount'] ?? 0);
+        }
+
+        return new EmbedResponse($vectors, $tokens, $model);
     }
 
     /** @param array<int, array{role: string, content: mixed}> $messages */

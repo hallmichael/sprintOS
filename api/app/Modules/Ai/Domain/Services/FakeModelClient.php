@@ -5,6 +5,8 @@ namespace App\Modules\Ai\Domain\Services;
 use App\Modules\Ai\Domain\Contracts\ModelClient;
 use App\Modules\Ai\Domain\Data\ChatRequest;
 use App\Modules\Ai\Domain\Data\ChatResponse;
+use App\Modules\Ai\Domain\Data\EmbedRequest;
+use App\Modules\Ai\Domain\Data\EmbedResponse;
 use App\Modules\Ai\Domain\Data\TokenUsage;
 
 /**
@@ -56,6 +58,20 @@ final class FakeModelClient implements ModelClient
             stopReason: 'end_turn',
             model: $request->modelId(),
         );
+    }
+
+    public function embed(EmbedRequest $request): EmbedResponse
+    {
+        // Deterministic pseudo-vectors (8-dim) derived from each text's hash.
+        $vectors = [];
+        $tokens = 0;
+        foreach ($request->inputs as $text) {
+            $tokens += (int) ceil(strlen($text) / 4);
+            $bytes = array_values(unpack('C*', substr(md5($text, true), 0, 8)));
+            $vectors[] = array_map(fn ($b) => round($b / 255, 6), $bytes);
+        }
+
+        return new EmbedResponse($vectors, $tokens, $request->modelId());
     }
 
     private function charCount(ChatRequest $request): int

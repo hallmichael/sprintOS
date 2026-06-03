@@ -9,8 +9,9 @@ return [
 
     // ── AI gateway (Claude via Amazon Bedrock) ────────────────────────────
     'ai' => [
-        // 'fake' (no creds, deterministic — used in tests/local) or 'bedrock'.
-        'driver' => env('AI_DRIVER', 'fake'),
+        // 'bedrock' (production default) or 'fake' (deterministic — tests/local only;
+        // forbidden in production by AiServiceProvider).
+        'driver' => env('AI_DRIVER', 'bedrock'),
 
         'region' => env('AWS_BEDROCK_REGION', env('AWS_DEFAULT_REGION', 'ap-southeast-2')),
 
@@ -37,8 +38,9 @@ return [
         'cycle' => env('BILLING_CYCLE', 'monthly'),
 
         'payments' => [
-            // 'fake' (tests/local) or 'stripe'.
-            'driver' => env('PAYMENTS_DRIVER', 'fake'),
+            // 'stripe' (production default) or 'fake' (tests/local only; forbidden
+            // in production by BillingServiceProvider).
+            'driver' => env('PAYMENTS_DRIVER', 'stripe'),
             'stripe_key' => env('STRIPE_KEY'),
             'stripe_secret' => env('STRIPE_SECRET'),
             'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),

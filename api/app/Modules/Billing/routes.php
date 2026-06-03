@@ -1,7 +1,11 @@
 <?php
 
 use App\Modules\Billing\Http\Controllers\BillingController;
+use App\Modules\Billing\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
+
+// Stripe webhook — public, signature-verified (no auth/tenant middleware).
+Route::post('billing/webhook', [WebhookController::class, 'handle'])->name('billing.webhook');
 
 Route::middleware(['auth:sanctum', 'tenant'])->group(function (): void {
     // Read access for any org member.
