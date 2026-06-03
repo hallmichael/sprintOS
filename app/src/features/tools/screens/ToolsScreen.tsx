@@ -10,8 +10,9 @@ import {
 } from '@/components';
 import { FormSelect, FormTextInput } from '@/components/forms';
 import { IndiColumn, IndiTable } from '@/components';
+import { api } from '@/lib/api/client';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -53,18 +54,34 @@ const schema = yup.object({
 
 export default function ToolsScreen() {
   const [open, setOpen] = useState(false);
+  const [tools, setTools] = useState<Tool[]>([]);
+
+  const load = () =>
+    api
+      .get<{ data: any[] }>('/tools')
+      .then((res) => setTools((res.data ?? []).map((t) => ({ id: t.id, key: t.key, name: t.name, handler: t.handler, isEnabled: t.is_enabled }))))
+      .catch(() => setTools(MOCK_TOOLS));
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const { control, handleSubmit, reset } = useForm<RegisterToolForm>({
     resolver: yupResolver(schema),
     defaultValues: { key: '', name: '', description: '', handler: 'calculator' },
   });
 
-  const onRegister = (data: RegisterToolForm) => {
-    // TODO(api): POST /api/tools (org admin only).
-    console.log('register tool', data);
-    Toast.success({ message: `Tool "${data.key}" registered` });
-    reset();
-    setOpen(false);
+  const onRegister = async (data: RegisterToolForm) => {
+    try {
+      // Live: POST /api/tools (org admin only). input_schema kept minimal here.
+      await api.post('/tools', { ...data, input_schema: { type: 'object', properties: {} } });
+      Toast.success({ message: `Tool "${data.key}" registered` });
+      reset();
+      setOpen(false);
+      load();
+    } catch (e: any) {
+      Toast.error({ message: e?.data?.message ?? e?.message ?? 'Register failed' });
+    }
   };
 
   const columns: IndiColumn<Tool>[] = [
@@ -90,7 +107,7 @@ export default function ToolsScreen() {
           Register tool
         </IndiButton>
 
-        <IndiTable data={MOCK_TOOLS} columns={columns} />
+        <IndiTable data={tools} columns={columns} />
       </IndiYStack>
 
       <IndiModal isOpen={open} setIsOpen={setOpen} hideFooter title="Register tool">

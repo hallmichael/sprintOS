@@ -12,8 +12,9 @@ import {
 } from '@/components';
 import { FormTextInput } from '@/components/forms';
 import { IndiColumn, IndiTable } from '@/components';
+import { api } from '@/lib/api/client';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -38,10 +39,6 @@ const MOCK_ORGS: Organisation[] = [
   { id: '3', name: 'Coastal Electrical (archived)', slug: 'coastal-electrical', isActive: false, memberCount: 0 },
 ];
 
-// Flip to preview each state the screen must support.
-type ScreenState = 'populated' | 'loading' | 'empty' | 'error';
-const SCREEN_STATE: ScreenState = 'populated';
-
 const schema = yup.object({
   name: yup.string().required('Organisation name is required'),
   slug: yup
@@ -52,24 +49,40 @@ const schema = yup.object({
 
 export default function OrganisationsScreen() {
   const [createOpen, setCreateOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [orgs, setOrgs] = useState<Organisation[]>([]);
+
+  const load = () =>
+    api
+      .get<{ data: any[] }>('/tenants')
+      .then((res) => setOrgs((res.data ?? []).map((t) => ({ id: t.id, name: t.name, slug: t.slug, isActive: t.is_active, memberCount: t.member_count ?? 0 }))))
+      .catch(() => setOrgs(MOCK_ORGS))
+      .finally(() => setLoading(false));
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const { control, handleSubmit, reset } = useForm<CreateOrgForm>({
     resolver: yupResolver(schema),
     defaultValues: { name: '', slug: '' },
   });
 
-  const onCreate = (data: CreateOrgForm) => {
-    // TODO(api): POST /api/tenants (platform-admin only).
-    console.log('create org', data);
-    Toast.success({ message: `Organisation "${data.name}" created` });
-    reset();
-    setCreateOpen(false);
+  const onCreate = async (data: CreateOrgForm) => {
+    try {
+      await api.post('/tenants', data); // platform-admin only
+      Toast.success({ message: `Organisation "${data.name}" created` });
+      reset();
+      setCreateOpen(false);
+      load();
+    } catch (e: any) {
+      Toast.error({ message: e?.status === 403 ? 'Only a platform admin can create orgs' : e?.message ?? 'Create failed' });
+    }
   };
 
   const columns: IndiColumn<Organisation>[] = [
     { title: 'Name', dataIndex: 'name' },
     { title: 'Slug', dataIndex: 'slug' },
-    { title: 'Members', dataIndex: 'memberCount' },
     {
       title: 'Status',
       dataIndex: 'isActive',
@@ -78,8 +91,6 @@ export default function OrganisationsScreen() {
       ),
     },
   ];
-
-  const orgs = SCREEN_STATE === 'populated' ? MOCK_ORGS : [];
 
   return (
     <Container>
@@ -91,24 +102,18 @@ export default function OrganisationsScreen() {
           New organisation
         </IndiButton>
 
-        {SCREEN_STATE === 'loading' && <LoadingContainer />}
-
-        {SCREEN_STATE === 'error' && (
-          <IndiCard padding="$4">
-            <IndiText color="$Red500">Couldn’t load organisations. Pull to retry.</IndiText>
-          </IndiCard>
-        )}
-
-        {SCREEN_STATE === 'empty' && (
+        {loading ? (
+          <LoadingContainer />
+        ) : orgs.length === 0 ? (
           <IndiCard padding="$6" alignItems="center" gap="$2">
             <IndiText color="$textSecondary">No organisations yet.</IndiText>
             <IndiButton type="outline" color="primary" handlePress={() => setCreateOpen(true)}>
               Create your first org
             </IndiButton>
           </IndiCard>
+        ) : (
+          <IndiTable data={orgs} columns={columns} />
         )}
-
-        {SCREEN_STATE === 'populated' && <IndiTable data={orgs} columns={columns} />}
       </IndiYStack>
 
       <IndiModal isOpen={createOpen} setIsOpen={setCreateOpen} hideFooter title="New organisation">

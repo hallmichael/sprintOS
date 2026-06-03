@@ -12,9 +12,10 @@ import {
   Toast,
 } from '@/components';
 import { FormCheckbox, FormNumberInput, FormSelect, FormTextInput } from '@/components/forms';
+import { api } from '@/lib/api/client';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -30,11 +31,11 @@ interface SetupForm {
 
 const STEPS = ['Branding', 'Features', 'AI model', 'Billing', 'Review'] as const;
 
-// -- Mock Data (Sprint Digital will replace — GET /api/ai/tiers) --
-const TIER_OPTIONS = [
-  { label: 'Fast (Haiku) — cheap & quick', value: 'fast' },
-  { label: 'Balanced (Sonnet) — default', value: 'balanced' },
-  { label: 'Powerful (Sonnet 3.7) — deep reasoning', value: 'powerful' },
+// Fallback tier list (live list comes from GET /api/ai/tiers).
+const FALLBACK_TIERS = [
+  { label: 'fast', value: 'fast' },
+  { label: 'balanced', value: 'balanced' },
+  { label: 'powerful', value: 'powerful' },
 ];
 
 const schema = yup.object({
@@ -47,6 +48,15 @@ const schema = yup.object({
 
 export default function SetupWizardScreen() {
   const [step, setStep] = useState(0);
+  const [tierOptions, setTierOptions] = useState(FALLBACK_TIERS);
+
+  useEffect(() => {
+    // Live: GET /api/ai/tiers → [{ tier, model }]
+    api
+      .get<{ tiers: { tier: string; model: string }[] }>('/ai/tiers')
+      .then((res) => setTierOptions((res.tiers ?? []).map((t) => ({ label: `${t.tier} — ${t.model}`, value: t.tier }))))
+      .catch(() => undefined);
+  }, []);
 
   const { control, handleSubmit, trigger } = useForm<SetupForm>({
     resolver: yupResolver(schema) as any,
@@ -66,11 +76,29 @@ export default function SetupWizardScreen() {
   };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
-  const onFinish = (data: SetupForm) => {
-    // TODO(api): PATCH /api/org/settings, /api/billing/settings, POST /api/billing/card.
-    console.log('setup complete', data);
-    Toast.success({ message: 'Setup complete — your workspace is ready' });
-    router.replace('/(app)/(admin)/dashboard');
+  const onFinish = async (data: SetupForm) => {
+    try {
+      // Persist org settings, markup, and card via the live API.
+      await api.patch('/org/settings', {
+        name: data.displayName,
+        branding: { display_name: data.displayName, primary_color: data.primaryColor },
+        features: {
+          crud_builder: data.features.crudBuilder,
+          agents: data.features.agents,
+          rag: data.features.rag,
+          connectors: data.features.connectors,
+        },
+        ai_default_tier: data.aiDefaultTier,
+        setup_completed: true,
+      });
+      await api.patch('/billing/settings', { markup_rate: data.markupRate });
+      if (data.paymentMethodId) await api.post('/billing/card', { payment_method_id: data.paymentMethodId });
+
+      Toast.success({ message: 'Setup complete — your workspace is ready' });
+      router.replace('/(app)/(admin)/dashboard');
+    } catch (e: any) {
+      Toast.error({ message: e?.message ?? 'Could not save setup' });
+    }
   };
 
   return (
@@ -113,7 +141,7 @@ export default function SetupWizardScreen() {
           {step === 2 && (
             <IndiYStack gap="$3">
               <IndiH3>Default AI model tier</IndiH3>
-              <FormSelect control={control} name="aiDefaultTier" label="Tier" data={TIER_OPTIONS} />
+              <FormSelect control={control} name="aiDefaultTier" label="Tier" data={tierOptions} />
             </IndiYStack>
           )}
 

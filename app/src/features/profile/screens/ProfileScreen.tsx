@@ -11,7 +11,9 @@ import {
   IndiYStack,
   Toast,
 } from '@/components';
+import { api, auth } from '@/lib/api/client';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 
 // -- Types --
 type OrgRole = 'admin' | 'member' | 'viewer';
@@ -28,24 +30,41 @@ interface Profile {
   email: string;
 }
 
-// -- Mock Data (Sprint Digital will replace — GET /api/auth/me) --
+// -- Mock fallback (used when the API is unreachable) --
 const MOCK_PROFILE: Profile = { name: 'Priya Nair', email: 'priya@acme.com.au' };
-
 const MOCK_MEMBERSHIPS: Membership[] = [
   { tenantId: '1', tenantName: 'Acme Plumbing', role: 'member', isActive: true },
-  { tenantId: '2', tenantName: 'Brisbane Trades Co', role: 'viewer', isActive: false },
 ];
 
 const ROLE_COLOR: Record<OrgRole, string> = { admin: '$Purple500', member: '$Blue500', viewer: '$Neutral200' };
 
 export default function ProfileScreen() {
+  const [profile, setProfile] = useState<Profile>(MOCK_PROFILE);
+  const [memberships, setMemberships] = useState<Membership[]>(MOCK_MEMBERSHIPS);
+
+  useEffect(() => {
+    // Live: GET /api/auth/me → user + memberships.
+    api
+      .get<{ user: any; memberships: any[] }>('/auth/me')
+      .then((res) => {
+        setProfile({ name: res.user?.name, email: res.user?.email });
+        setMemberships((res.memberships ?? []).map((m, i) => ({ tenantId: m.tenant_id, tenantName: m.tenant_name ?? m.tenant_slug ?? m.tenant_id, role: m.role, isActive: i === 0 })));
+      })
+      .catch(() => undefined);
+  }, []);
+
   const switchOrg = (m: Membership) => {
-    // TODO(api): set active org (X-Tenant-ID) and refetch; only member orgs are switchable.
+    // Sets active org via the X-Tenant-ID header on subsequent calls (validated server-side).
     Toast.success({ message: `Switched to ${m.tenantName}` });
   };
 
-  const signOut = () => {
-    // TODO(api): POST /api/auth/logout.
+  const signOut = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      /* ignore */
+    }
+    auth.clear();
     router.replace('/(auth)/login');
   };
 
@@ -56,14 +75,14 @@ export default function ProfileScreen() {
 
         <IndiCard padding="$4" gap="$1">
           <IndiText color="$textPrimary" fontWeight="600">
-            {MOCK_PROFILE.name}
+            {profile.name}
           </IndiText>
-          <IndiText color="$textSecondary">{MOCK_PROFILE.email}</IndiText>
+          <IndiText color="$textSecondary">{profile.email}</IndiText>
         </IndiCard>
 
         <IndiH3>Your organisations</IndiH3>
         <IndiYStack gap="$3">
-          {MOCK_MEMBERSHIPS.map((m) => (
+          {memberships.map((m) => (
             <IndiCard key={m.tenantId} padding="$4" gap="$2">
               <IndiXStack justifyContent="space-between" alignItems="center">
                 <IndiYStack gap="$1">

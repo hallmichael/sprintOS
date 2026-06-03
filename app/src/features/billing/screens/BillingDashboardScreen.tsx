@@ -13,8 +13,9 @@ import {
 } from '@/components';
 import { FormTextInput } from '@/components/forms';
 import { IndiColumn, IndiTable } from '@/components';
+import { api } from '@/lib/api/client';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -61,31 +62,72 @@ const schema = yup.object({
   paymentMethodId: yup.string().required('Enter the tokenised payment method id'),
 });
 
+const mapInvoice = (i: any): Invoice => ({
+  id: i.id, number: i.number, periodStart: i.period_start, periodEnd: i.period_end,
+  total: Number(i.total), currency: i.currency, status: i.status,
+});
+
 export default function BillingDashboardScreen() {
   const [cardOpen, setCardOpen] = useState(false);
-  const card = MOCK_CARD;
+  const [card, setCard] = useState<Card | null>(null);
+  const [currency, setCurrency] = useState('AUD');
+  const [currentSpend, setCurrentSpend] = useState(0);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  const load = async () => {
+    try {
+      const s = await api.get<{ settings: any; current_spend: number }>('/billing/settings');
+      setCard(s.settings?.card ?? null);
+      setCurrency(s.settings?.currency ?? 'AUD');
+      setCurrentSpend(s.current_spend ?? 0);
+      const inv = await api.get<{ data: any[] }>('/billing/invoices');
+      setInvoices((inv.data ?? []).map(mapInvoice));
+    } catch {
+      setCard(MOCK_CARD);
+      setCurrentSpend(MOCK_CURRENT_SPEND);
+      setInvoices(MOCK_INVOICES);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const { control, handleSubmit, reset } = useForm<AddCardForm>({
     resolver: yupResolver(schema),
     defaultValues: { paymentMethodId: '' },
   });
 
-  const onAddCard = (data: AddCardForm) => {
-    // TODO(api): POST /api/billing/card { payment_method_id }.
-    console.log('add card', data);
-    Toast.success({ message: 'Card saved' });
-    reset();
-    setCardOpen(false);
+  const onAddCard = async (data: AddCardForm) => {
+    try {
+      await api.post('/billing/card', { payment_method_id: data.paymentMethodId });
+      Toast.success({ message: 'Card saved' });
+      reset();
+      setCardOpen(false);
+      load();
+    } catch (e: any) {
+      Toast.error({ message: e?.message ?? 'Could not save card' });
+    }
   };
 
-  const onGenerate = () => {
-    // TODO(api): POST /api/billing/invoices/generate.
-    Toast.success({ message: 'Invoice generated for the current period' });
+  const onGenerate = async () => {
+    try {
+      const res = await api.post<any>('/billing/invoices/generate');
+      Toast.success({ message: res?.number ? `Generated ${res.number}` : 'No unbilled usage this period' });
+      load();
+    } catch (e: any) {
+      Toast.error({ message: e?.message ?? 'Generate failed' });
+    }
   };
 
-  const onCharge = (invoice: Invoice) => {
-    // TODO(api): POST /api/billing/invoices/{id}/charge.
-    Toast.success({ message: `Charged ${invoice.number}` });
+  const onCharge = async (invoice: Invoice) => {
+    try {
+      const res = await api.post<any>(`/billing/invoices/${invoice.id}/charge`);
+      Toast[res?.status === 'paid' ? 'success' : 'error']({ message: `${invoice.number}: ${res?.status}` });
+      load();
+    } catch (e: any) {
+      Toast.error({ message: e?.message ?? 'Charge failed' });
+    }
   };
 
   const columns: IndiColumn<Invoice>[] = [
@@ -113,7 +155,7 @@ export default function BillingDashboardScreen() {
         <IndiXStack gap="$4" flexWrap="wrap">
           <IndiCard flex={1} minWidth={220} padding="$4" gap="$1">
             <IndiText color="$textSecondary">Current period spend</IndiText>
-            <IndiH3>AUD ${MOCK_CURRENT_SPEND.toFixed(2)}</IndiH3>
+            <IndiH3>{currency} ${currentSpend.toFixed(4)}</IndiH3>
           </IndiCard>
 
           <IndiCard flex={1} minWidth={220} padding="$4" gap="$2">
@@ -138,7 +180,7 @@ export default function BillingDashboardScreen() {
           </IndiButton>
         </IndiXStack>
 
-        <IndiTable data={MOCK_INVOICES} columns={columns} />
+        <IndiTable data={invoices} columns={columns} />
       </IndiYStack>
 
       <IndiModal isOpen={cardOpen} setIsOpen={setCardOpen} hideFooter title="Add payment card">

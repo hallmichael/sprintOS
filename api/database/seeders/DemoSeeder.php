@@ -26,6 +26,8 @@ class DemoSeeder extends Seeder
             ['tenant_id' => $tenant->id, 'user_id' => $admin->id],
             ['role' => 'admin'],
         );
+        // Demo admin is also the deployment operator (can manage all orgs).
+        $admin->assignRole('platform-admin');
 
         $member = User::firstOrCreate(
             ['email' => 'member@acme.com'],

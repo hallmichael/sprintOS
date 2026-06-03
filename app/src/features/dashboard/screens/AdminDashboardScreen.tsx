@@ -1,6 +1,8 @@
 import { Container, IndiCard, IndiH1, IndiH3, IndiParagraph, IndiText, IndiXStack, IndiYStack } from '@/components';
 import { IndiButton } from '@/components/buttons';
+import { api } from '@/lib/api/client';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 
 // -- Types --
 interface SpendSummary {
@@ -34,10 +36,23 @@ const ADMIN_TILES: AdminTile[] = [
   { title: 'Setup wizard', description: 'Configure this deployment', href: '/(app)/(admin)/setup' },
 ];
 
-const money = (n: number, currency: string) => `${currency} $${n.toFixed(2)}`;
+const money = (n: number, currency: string) => `${currency} $${n.toFixed(4)}`;
 
 export default function AdminDashboardScreen() {
-  const spend = MOCK_SPEND;
+  const [spend, setSpend] = useState<SpendSummary>(MOCK_SPEND);
+
+  useEffect(() => {
+    // Live: GET /api/usage/summary + /api/billing/settings.
+    (async () => {
+      try {
+        const usage = await api.get<{ currency: string; billable: number; unbilled: number }>('/usage/summary');
+        const billing = await api.get<{ alerting: boolean }>('/billing/settings');
+        setSpend({ currency: usage.currency, billable: usage.billable, unbilled: usage.unbilled, alerting: billing.alerting });
+      } catch {
+        /* keep mock */
+      }
+    })();
+  }, []);
 
   return (
     <Container>

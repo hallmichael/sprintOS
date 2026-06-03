@@ -25,7 +25,7 @@ final class ToolController extends Controller
     /** GET /api/tools — registered tools for the active org. */
     public function index(): AnonymousResourceCollection
     {
-        return ToolResource::collection(Tool::query()->get());
+        return ToolResource::collection(Tool::query()->paginate());
     }
 
     /** POST /api/tools — register a tool (admin). */
