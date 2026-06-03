@@ -47,4 +47,18 @@ return [
             'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         ],
     ],
+
+    // ── Data lake ─────────────────────────────────────────────────────────
+    'datalake' => [
+        // 'fake' (local filesystem + in-memory vectors) or 's3' (AWS S3 + OpenSearch).
+        'driver'              => env('DATALAKE_DRIVER', 'fake'),
+        'region'              => env('AWS_DATALAKE_REGION', env('AWS_DEFAULT_REGION', 'ap-southeast-2')),
+        's3_bucket'           => env('DATALAKE_S3_BUCKET'),
+        'opensearch_endpoint' => env('DATALAKE_OPENSEARCH_ENDPOINT'),
+        'opensearch_index'    => env('DATALAKE_OPENSEARCH_INDEX', 'sprintos-datalake'),
+
+        // Chunking
+        'chunk_max_chars'     => (int) env('DATALAKE_CHUNK_MAX_CHARS', 1500),
+        'chunk_overlap_chars' => (int) env('DATALAKE_CHUNK_OVERLAP_CHARS', 200),
+    ],
 ];

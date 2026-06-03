@@ -15,15 +15,20 @@ final class ToolDispatcher
 {
     public function __construct(private readonly ToolRegistry $registry) {}
 
-    public function dispatch(string $tenantId, ToolUse $call, ?string $correlationId = null): ToolResult
+    /**
+     * @param  array<string, mixed>  $context  extra context passed to the handler
+     *                                          (e.g. roles for role-filtered tools like rag_search)
+     */
+    public function dispatch(string $tenantId, ToolUse $call, ?string $correlationId = null, array $context = []): ToolResult
     {
         try {
             $handler = $this->registry->handlerFor($tenantId, $call->name);
 
-            $content = $handler->handle($call->input, [
-                'tenant_id' => $tenantId,
+            $content = $handler->handle($call->input, array_merge([
+                'tenant_id'      => $tenantId,
                 'correlation_id' => $correlationId,
-            ]);
+                'roles'          => ['member'],   // default; overridden by Orchestration/HTTP callers
+            ], $context));
 
             return new ToolResult($call->id, $content);
         } catch (Throwable $e) {

@@ -1,0 +1,1 @@
+sprintOS is built on Laravel 12 and uses Claude via Bedrock. Payment terms are net 30 days. Support is available 24/7 via help@sprint.os.

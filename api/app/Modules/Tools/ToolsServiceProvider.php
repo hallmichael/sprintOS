@@ -2,6 +2,7 @@
 
 namespace App\Modules\Tools;
 
+use App\Modules\DataLake\Domain\Tools\RagSearchTool;
 use App\Modules\Tools\Domain\Handlers\CalculatorHandler;
 use App\Modules\Tools\Domain\Services\ToolRegistry;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,7 @@ class ToolsServiceProvider extends ServiceProvider
      */
     private const HANDLERS = [
         'calculator' => CalculatorHandler::class,
+        'rag_search' => RagSearchTool::class,    // Phase 4 — data lake retrieval
     ];
 
     public function register(): void

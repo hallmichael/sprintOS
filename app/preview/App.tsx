@@ -5,7 +5,7 @@ import { navStore } from './shims/expoRouter';
 import LoginScreen from '@/features/auth/screens/LoginScreen';
 import RegisterScreen from '@/features/auth/screens/RegisterScreen';
 
-// Implemented admin screens (Phases 1-3, wired to live API)
+// Implemented admin screens (Phases 1-4, wired to live API)
 import AdminDashboardScreen from '@/features/dashboard/screens/AdminDashboardScreen';
 import OrganisationsScreen from '@/features/organisations/screens/OrganisationsScreen';
 import UsersScreen from '@/features/users/screens/UsersScreen';
@@ -16,6 +16,7 @@ import AssistantScreen from '@/features/ai/screens/AssistantScreen';
 import UsageScreen from '@/features/usage/screens/UsageScreen';
 import CrudBuilderScreen from '@/features/crud/screens/CrudBuilderScreen';
 import EntityScreen from '@/features/crud/screens/EntityScreen';
+import DataLakeScreen from '@/features/datalake/screens/DataLakeScreen';
 
 // Implemented end-user screens
 import UserDashboardScreen from '@/features/dashboard/screens/UserDashboardScreen';
@@ -27,6 +28,7 @@ type NavEntry = { label: string; section: string; icon: string; C: React.Compone
 const ADMIN_NAV: NavEntry[] = [
   { label: 'Dashboard', section: 'Overview', icon: '◻', C: AdminDashboardScreen, href: '/(app)/(admin)/dashboard' },
   { label: 'CRUD builder', section: 'Data', icon: '⚡', C: CrudBuilderScreen, href: '/(app)/(admin)/crud-builder' },
+  { label: 'Data lake', section: 'Data', icon: '🗄', C: DataLakeScreen, href: '/(app)/(admin)/datalake' },
   { label: 'Organisations', section: 'Workspace', icon: '🏢', C: OrganisationsScreen, href: '/(app)/(admin)/organisations' },
   { label: 'Users & roles', section: 'Workspace', icon: '👥', C: UsersScreen, href: '/(app)/(admin)/users' },
   { label: 'AI assistant', section: 'AI', icon: '✦', C: AssistantScreen, href: '/(app)/(admin)/assistant' },

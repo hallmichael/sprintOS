@@ -31,6 +31,7 @@ arch('only Ai, Connectors, Usage may call external services directly')
         'App\Modules\Ai',
         'App\Modules\Connectors',
         'App\Modules\Usage',
+        'App\Modules\DataLake',   // OpenSearch HTTP calls + S3 SDK
     ]);
 
 // ── 2b. All AI calls go through the gateway ──────────────────────────────

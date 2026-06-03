@@ -23,9 +23,10 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <!-- Tests run against the deterministic fake drivers (no AWS/Stripe creds). -->
+        <!-- Tests run against deterministic fake drivers (no AWS/Stripe/OpenSearch creds). -->
         <env name="AI_DRIVER" value="fake"/>
         <env name="PAYMENTS_DRIVER" value="fake"/>
+        <env name="DATALAKE_DRIVER" value="fake"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
