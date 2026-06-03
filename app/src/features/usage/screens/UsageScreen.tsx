@@ -1,5 +1,6 @@
-import { Container, IndiCard, IndiH1, IndiH3, IndiText, IndiXStack, IndiYStack, LoadingContainer } from '@/components';
-import { IndiColumn, IndiTable } from '@/components';
+import { Container, IndiCard, IndiColumn, IndiH1, IndiH3, IndiTable, IndiText, IndiXStack, IndiYStack, LoadingContainer } from '@/components';
+import { api } from '@/lib/api/client';
+import { useEffect, useState } from 'react';
 
 // -- Types --
 interface ServiceRollup {
@@ -18,25 +19,46 @@ interface UsageEvent {
   createdAt: string;
 }
 
-// -- Mock Data (Sprint Digital will replace — GET /api/usage/summary + /events) --
+// -- Mock fallback (used when the API is unreachable) --
 const MOCK_ROLLUP: ServiceRollup[] = [
   { service: 'bedrock', quantity: 248_300, billable: 178.94 },
   { service: 'maps', quantity: 1_204, billable: 4.18 },
-  { service: 'sms', quantity: 92, billable: 1.2 },
 ];
-
 const MOCK_EVENTS: UsageEvent[] = [
   { id: '1', service: 'bedrock', operation: 'chat', unit: 'input_tokens', quantity: 1240, billableCost: 0.0048, createdAt: '2026-06-03 09:14' },
-  { id: '2', service: 'bedrock', operation: 'chat', unit: 'output_tokens', quantity: 612, billableCost: 0.0119, createdAt: '2026-06-03 09:14' },
-  { id: '3', service: 'bedrock', operation: 'embed', unit: 'input_tokens', quantity: 8400, billableCost: 0.0002, createdAt: '2026-06-03 08:51' },
 ];
 
-type ScreenState = 'populated' | 'loading' | 'empty';
-const SCREEN_STATE: ScreenState = 'populated';
-
-const totalBillable = MOCK_ROLLUP.reduce((sum, r) => sum + r.billable, 0);
-
 export default function UsageScreen() {
+  const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState('AUD');
+  const [billable, setBillable] = useState<number | null>(null);
+  const [rollup, setRollup] = useState<ServiceRollup[]>([]);
+  const [events, setEvents] = useState<UsageEvent[]>([]);
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const summary = await api.get<{ currency: string; billable: number; by_service: Record<string, { billable: number; quantity: number }> }>('/usage/summary');
+        const evs = await api.get<{ data: any[] }>('/usage/events');
+        setCurrency(summary.currency ?? 'AUD');
+        setBillable(summary.billable ?? 0);
+        setRollup(Object.entries(summary.by_service ?? {}).map(([service, v]) => ({ service, billable: v.billable, quantity: v.quantity })));
+        setEvents((evs.data ?? []).map((e) => ({
+          id: e.id, service: e.service, operation: e.operation, unit: e.unit,
+          quantity: Number(e.quantity), billableCost: Number(e.billable_cost), createdAt: String(e.created_at ?? '').replace('T', ' ').slice(0, 16),
+        })));
+        setLive(true);
+      } catch {
+        setRollup(MOCK_ROLLUP);
+        setEvents(MOCK_EVENTS);
+        setBillable(MOCK_ROLLUP.reduce((s, r) => s + r.billable, 0));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const eventColumns: IndiColumn<UsageEvent>[] = [
     { title: 'When', dataIndex: 'createdAt' },
     { title: 'Service', dataIndex: 'service' },
@@ -49,38 +71,34 @@ export default function UsageScreen() {
   return (
     <Container>
       <IndiYStack gap="$4" padding="$4">
-        <IndiH1>Usage</IndiH1>
+        <IndiH1>Usage {live ? '· live' : ''}</IndiH1>
 
-        {SCREEN_STATE === 'loading' && <LoadingContainer />}
-
-        {SCREEN_STATE === 'empty' && (
+        {loading ? (
+          <LoadingContainer />
+        ) : events.length === 0 ? (
           <IndiCard padding="$6" alignItems="center">
-            <IndiText color="$textSecondary">No usage recorded yet this period.</IndiText>
+            <IndiText color="$textSecondary">No usage recorded yet — try the Assistant, then come back.</IndiText>
           </IndiCard>
-        )}
-
-        {SCREEN_STATE === 'populated' && (
+        ) : (
           <>
             <IndiCard padding="$4" gap="$1">
               <IndiText color="$textSecondary">Billable this period</IndiText>
-              <IndiH3>AUD ${totalBillable.toFixed(2)}</IndiH3>
+              <IndiH3>{currency} ${(billable ?? 0).toFixed(currency === 'AUD' ? 4 : 2)}</IndiH3>
             </IndiCard>
 
             <IndiH3>By service</IndiH3>
             <IndiXStack gap="$4" flexWrap="wrap">
-              {MOCK_ROLLUP.map((r) => (
+              {rollup.map((r) => (
                 <IndiCard key={r.service} flex={1} minWidth={180} padding="$4" gap="$1">
                   <IndiText color="$textSecondary">{r.service}</IndiText>
-                  <IndiText color="$textPrimary" fontWeight="600">
-                    AUD ${r.billable.toFixed(2)}
-                  </IndiText>
+                  <IndiText color="$textPrimary" fontWeight="600">{currency} ${r.billable.toFixed(4)}</IndiText>
                   <IndiText color="$textNeutral">{r.quantity.toLocaleString()} units</IndiText>
                 </IndiCard>
               ))}
             </IndiXStack>
 
             <IndiH3>Recent events</IndiH3>
-            <IndiTable data={MOCK_EVENTS} columns={eventColumns} />
+            <IndiTable data={events} columns={eventColumns} />
           </>
         )}
       </IndiYStack>

@@ -1,6 +1,7 @@
 import { IndiButton } from '@/components/buttons';
 import { FormTextInput } from '@/components/forms';
 import { Container, IndiCard, IndiH1, IndiSeparator, IndiText, IndiYStack, Toast } from '@/components';
+import { api } from '@/lib/api/client';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -35,11 +36,15 @@ export default function LoginScreen() {
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = (data: LoginForm) => {
-    // TODO(api): POST /api/auth/login → store token, redirect by role.
-    console.log('login', data);
-    Toast.success({ message: 'Signed in' });
-    router.replace('/(app)/(admin)/dashboard');
+  const onSubmit = async (data: LoginForm) => {
+    try {
+      const res = await api.login(data.email, data.password);
+      const role = res.memberships?.[0]?.role;
+      Toast.success({ message: `Signed in as ${res.user?.name ?? data.email}` });
+      router.replace(role === 'admin' ? '/(app)/(admin)/dashboard' : '/(app)/(user)/dashboard');
+    } catch (e: any) {
+      Toast.error({ message: e?.message ?? 'Login failed' });
+    }
   };
 
   const onSso = (provider: SsoProvider) => {

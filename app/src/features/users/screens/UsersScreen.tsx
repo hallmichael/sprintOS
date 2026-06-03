@@ -10,8 +10,9 @@ import {
 } from '@/components';
 import { FormSelect, FormTextInput } from '@/components/forms';
 import { IndiColumn, IndiTable } from '@/components';
+import { api } from '@/lib/api/client';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -58,6 +59,15 @@ const schema = yup.object({
 
 export default function UsersScreen() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [users, setUsers] = useState<OrgUser[]>(MOCK_USERS);
+
+  useEffect(() => {
+    // Live: GET /api/users (members of the active org). Falls back to mock.
+    api
+      .get<{ data: any[] }>('/users')
+      .then((res) => setUsers((res.data ?? []).map((u) => ({ id: u.id, name: u.name, email: u.email, role: (u.role ?? 'member') as OrgRole }))))
+      .catch(() => undefined);
+  }, []);
 
   const { control, handleSubmit, reset } = useForm<InviteForm>({
     resolver: yupResolver(schema),
@@ -112,7 +122,7 @@ export default function UsersScreen() {
           Invite user
         </IndiButton>
 
-        <IndiTable data={MOCK_USERS} columns={columns} />
+        <IndiTable data={users} columns={columns} />
       </IndiYStack>
 
       <IndiModal isOpen={inviteOpen} setIsOpen={setInviteOpen} hideFooter title="Invite user">

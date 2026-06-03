@@ -10,6 +10,8 @@ import {
   IndiYStack,
 } from '@/components';
 import { IndiInput } from '@/components/inputs';
+import { api } from '@/lib/api/client';
+import { Toast } from '@/components';
 import { useState } from 'react';
 
 // -- Types --
@@ -43,21 +45,28 @@ export default function AssistantScreen() {
   const [tier, setTier] = useState<Tier>('balanced');
   const [thinking, setThinking] = useState(false);
 
-  const send = () => {
+  const send = async () => {
     if (!prompt.trim()) return;
-    const userMsg: ChatMessage = { id: `${Date.now()}`, role: 'user', text: prompt.trim() };
-    setMessages((m) => [...m, userMsg]);
+    const text = prompt.trim();
+    setMessages((m) => [...m, { id: `${Date.now()}`, role: 'user', text }]);
     setPrompt('');
     setThinking(true);
 
-    // TODO(api): POST /api/ai/complete { prompt, tier } → append assistant reply.
-    setTimeout(() => {
+    try {
+      // Live: POST /api/ai/complete → real Claude via Bedrock, metered server-side.
+      const res = await api.post<{ text: string; model: string; usage: { input_tokens: number; output_tokens: number } }>(
+        '/ai/complete',
+        { prompt: text, tier },
+      );
       setMessages((m) => [
         ...m,
-        { id: `${Date.now()}-a`, role: 'assistant', text: 'This is a sample reply from the assistant.' },
+        { id: `${Date.now()}-a`, role: 'assistant', text: `${res.text}\n\n— ${res.model} · ${res.usage.input_tokens}+${res.usage.output_tokens} tok` },
       ]);
+    } catch (e: any) {
+      Toast.error({ message: e?.status === 401 ? 'Please sign in first' : e?.message ?? 'AI request failed' });
+    } finally {
       setThinking(false);
-    }, 800);
+    }
   };
 
   return (
